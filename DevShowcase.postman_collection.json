@@ -322,7 +322,50 @@
           "response": []
         },
         {
-          "name": "3.4 [Validação 400] Criar Projeto com URL Inválida",
+          "name": "3.4 Incrementar Curtidas / Upvotes (PUT /api/projects/:id/upvote)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/upvote",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}", "upvote"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.5 Buscar Projetos com Filtro e Paginação (GET /api/projects?technology=&page=&limit=)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects?technology=TypeScript&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"],
+              "query": [
+                {
+                  "key": "technology",
+                  "value": "TypeScript",
+                  "description": "Nome da tecnologia para filtrar"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número da página"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Quantidade de itens por página"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.6 [Validação 400] Criar Projeto com URL Inválida",
           "request": {
             "method": "POST",
             "header": [
