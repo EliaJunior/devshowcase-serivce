@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 
 export interface CreateProjectInput {
@@ -6,6 +7,12 @@ export interface CreateProjectInput {
   repositoryUrl: string;
   profileId: string;
   technologyIds?: string[];
+}
+
+export interface FindAllProjectsInput {
+  technology?: string;
+  page?: number;
+  limit?: number;
 }
 
 export class ProjectRepository {
@@ -47,28 +54,53 @@ export class ProjectRepository {
     });
   }
 
-  async findAll() {
-    return prisma.project.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        profile: {
-          select: { id: true, name: true, email: true },
-        },
-        technologies: {
-          select: { id: true, name: true, createdAt: true },
-        },
-        feedbacks: {
-          select: {
-            id: true,
-            projectId: true,
-            authorName: true,
-            comment: true,
-            rating: true,
-            createdAt: true,
+  async findAll(input?: FindAllProjectsInput) {
+    const technology = input?.technology;
+    const page = input?.page ?? 1;
+    const limit = input?.limit ?? 10;
+
+    const where: Prisma.ProjectWhereInput = technology
+      ? {
+          technologies: {
+            some: {
+              name: {
+                equals: technology,
+                mode: 'insensitive',
+              },
+            },
+          },
+        }
+      : {};
+
+    const [projects, total] = await Promise.all([
+      prisma.project.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          profile: {
+            select: { id: true, name: true, email: true },
+          },
+          technologies: {
+            select: { id: true, name: true, createdAt: true },
+          },
+          feedbacks: {
+            select: {
+              id: true,
+              projectId: true,
+              authorName: true,
+              comment: true,
+              rating: true,
+              createdAt: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.project.count({ where }),
+    ]);
+
+    return { projects, total };
   }
 
   async findById(id: string) {
@@ -92,6 +124,42 @@ export class ProjectRepository {
           },
         },
       },
+    });
+  }
+
+  async incrementUpvotes(id: string) {
+    return prisma.project.update({
+      where: { id },
+      data: {
+        upvotes: {
+          increment: 1,
+        },
+      },
+      include: {
+        profile: {
+          select: { id: true, name: true, email: true },
+        },
+        technologies: {
+          select: { id: true, name: true, createdAt: true },
+        },
+        feedbacks: {
+          select: {
+            id: true,
+            projectId: true,
+            authorName: true,
+            comment: true,
+            rating: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateAverageRating(id: string, averageRating: number) {
+    return prisma.project.update({
+      where: { id },
+      data: { averageRating },
     });
   }
 

@@ -29,11 +29,25 @@ export const createProjectSchema = z.object({
 
 export type CreateProjectDTO = z.infer<typeof createProjectSchema>;
 
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_LIMIT = 10;
+export const MAX_LIMIT = 100;
+
+export const queryProjectSchema = z.object({
+  technology: z.string().trim().optional(),
+  page: z.coerce.number().int().positive().default(DEFAULT_PAGE),
+  limit: z.coerce.number().int().positive().max(MAX_LIMIT).default(DEFAULT_LIMIT),
+});
+
+export type QueryProjectDTO = z.infer<typeof queryProjectSchema>;
+
 export interface ProjectResponseDTO {
   id: string;
   title: string;
   description: string | null;
   repositoryUrl: string;
+  upvotes: number;
+  averageRating: number;
   profileId: string;
   profile?: {
     id: string;
@@ -44,4 +58,16 @@ export interface ProjectResponseDTO {
   feedbacks?: FeedbackResponseDTO[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface PaginationMetaDTO {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedProjectsResponseDTO {
+  data: ProjectResponseDTO[];
+  pagination: PaginationMetaDTO;
 }

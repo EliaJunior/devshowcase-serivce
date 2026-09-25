@@ -34,6 +34,22 @@ export class FeedbackRepository {
       where: { id },
     });
   }
+
+  async calculateAverageRatingByProjectId(projectId: string): Promise<number> {
+    const result = await prisma.feedback.aggregate({
+      _avg: {
+        rating: true,
+      },
+      where: { projectId },
+    });
+
+    if (result._avg.rating === null || result._avg.rating === undefined) {
+      return 0;
+    }
+
+    // Arredonda para 2 casas decimais
+    return Math.round(result._avg.rating * 100) / 100;
+  }
 }
 
 export const feedbackRepository = new FeedbackRepository();

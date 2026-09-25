@@ -1,4 +1,11 @@
-import { CreateProjectDTO, ProjectResponseDTO } from '../dtos/project.dto';
+import {
+  CreateProjectDTO,
+  ProjectResponseDTO,
+  QueryProjectDTO,
+  PaginatedProjectsResponseDTO,
+  DEFAULT_PAGE,
+  DEFAULT_LIMIT,
+} from '../dtos/project.dto';
 import { projectRepository, ProjectRepository } from '../repositories/project.repository';
 import { profileRepository, ProfileRepository } from '../repositories/profile.repository';
 import { technologyRepository, TechnologyRepository } from '../repositories/technology.repository';
@@ -36,8 +43,28 @@ export class ProjectService {
     return project;
   }
 
-  async getAllProjects(): Promise<ProjectResponseDTO[]> {
-    return this.projectRepo.findAll();
+  async getAllProjects(filters?: QueryProjectDTO): Promise<PaginatedProjectsResponseDTO> {
+    const page = filters?.page ?? DEFAULT_PAGE;
+    const limit = filters?.limit ?? DEFAULT_LIMIT;
+    const technology = filters?.technology;
+
+    const { projects, total } = await this.projectRepo.findAll({
+      technology,
+      page,
+      limit,
+    });
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      data: projects,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   async getProjectById(id: string): Promise<ProjectResponseDTO> {
@@ -46,6 +73,15 @@ export class ProjectService {
       throw new AppError('Projeto não encontrado', 404);
     }
     return project;
+  }
+
+  async upvoteProject(id: string): Promise<ProjectResponseDTO> {
+    const project = await this.projectRepo.findById(id);
+    if (!project) {
+      throw new AppError('Projeto não encontrado', 404);
+    }
+
+    return this.projectRepo.incrementUpvotes(id);
   }
 }
 

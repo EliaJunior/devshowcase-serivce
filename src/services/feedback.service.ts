@@ -22,6 +22,9 @@ export class FeedbackService {
       rating: data.rating,
     });
 
+    const averageRating = await this.feedbackRepo.calculateAverageRatingByProjectId(projectId);
+    await this.projectRepo.updateAverageRating(projectId, averageRating);
+
     return {
       id: feedback.id,
       projectId: feedback.projectId,

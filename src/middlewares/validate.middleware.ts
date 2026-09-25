@@ -23,3 +23,26 @@ export const validateBody = (schema: ZodSchema) => {
     next();
   };
 };
+
+export const validateQuery = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+
+    if (!result.success) {
+      const error = result.error as ZodError;
+      const formattedErrors = error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      }));
+
+      res.status(400).json({
+        message: 'Parâmetros de consulta inválidos',
+        errors: formattedErrors,
+      });
+      return;
+    }
+
+    res.locals.validatedQuery = result.data;
+    next();
+  };
+};
