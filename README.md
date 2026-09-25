@@ -8,7 +8,7 @@
 
 - **Runtime & Linguagem**: [Node.js](https://nodejs.org/) (v24) com [TypeScript](https://www.typescriptlang.org/)
 - **Framework Web**: [Express](https://expressjs.com/)
-- **ORM & Banco de Dados**: [Prisma ORM](https://www.prisma.io/) com [PostgreSQL](https://www.postgresql.org/) (orquestrado via Docker Compose)
+- **ORM & Banco de Dados**: [Prisma ORM](https://www.prisma.io/) com [PostgreSQL](https://www.postgresql.org/) (Docker Compose localmente / [Supabase](https://supabase.com/) em produção)
 - **Validação de Dados & DTOs**: [Zod](https://zod.dev/)
 - **Testes Automatizados**: [Vitest](https://vitest.dev/) e [Supertest](https://github.com/ladjs/supertest)
 
@@ -163,33 +163,32 @@ npm start
 
 ---
 
-## 🚀 Como Fazer Deploy no Render
+## 🚀 Como Fazer Deploy (Render + Supabase)
 
-O [Render](https://render.com/) é uma plataforma em nuvem que oferece hospedagem gratuita para aplicações Node.js e instâncias gerenciadas do PostgreSQL.
-
-Siga o passo a passo abaixo para publicar o **DevShowcase Service**:
-
-### Passo 1: Criar o Banco de Dados PostgreSQL no Render
-
-1. Acesse o [Dashboard do Render](https://dashboard.render.com/) e clique em **New +** > **PostgreSQL**.
-2. Preencha as configurações:
-   - **Name**: `devshowcase-postgres`
-   - **Database**: `devshowcase`
-   - **User**: `postgres` (ou o usuário gerado automaticamente)
-   - **Region**: Selecione a região desejada (ex: *Frankfurt*, *Ohio* ou *Oregon*)
-   - **Plan**: **Free**
-3. Clique em **Create Database**.
-4. Quando o banco estiver criado e ativo, copie o valor do campo **Internal Database URL** (recomendado se o Web Service estiver na mesma região) ou **External Database URL**.
+Nesta arquitetura de produção, a API Node.js é hospedada no **[Render](https://render.com/)** e o banco de dados PostgreSQL gerenciado é fornecido pelo **[Supabase](https://supabase.com/)**.
 
 ---
 
-### Passo 2: Criar o Web Service da API
+### Passo 1: Obter a Connection String do PostgreSQL no Supabase
 
-1. No Dashboard do Render, clique em **New +** > **Web Service**.
+1. Acesse o [Dashboard do Supabase](https://supabase.com/dashboard) e selecione ou crie um projeto.
+2. No menu lateral, acesse **Project Settings** > **Database** (ou clique no botão **Connect** no topo da tela).
+3. Role até a seção **Connection string** e selecione a aba **URI**.
+4. Copie a URL de conexão no formato:
+   ```
+   postgresql://postgres:[SUA-SENHA]@db.[SEU-PROJECT-REF].supabase.co:5432/postgres
+   ```
+   *(Substitua `[SUA-SENHA]` pela senha definida na criação do banco no Supabase)*.
+
+---
+
+### Passo 2: Criar o Web Service da API no Render
+
+1. No [Dashboard do Render](https://dashboard.render.com/), clique em **New +** > **Web Service**.
 2. Conecte sua conta do GitHub e selecione o repositório **`devshowcase-service`**.
 3. Configure os detalhes do serviço:
    - **Name**: `devshowcase-service`
-   - **Region**: A mesma região onde criou o PostgreSQL no Passo 1
+   - **Region**: Selecione uma região próxima à do seu banco no Supabase
    - **Branch**: `main`
    - **Runtime**: `Node`
    - **Build Command**:
@@ -204,15 +203,14 @@ Siga o passo a passo abaixo para publicar o **DevShowcase Service**:
 
 ---
 
-### Passo 3: Configurar Variáveis de Ambiente (Environment Variables)
+### Passo 3: Configurar Variáveis de Ambiente no Render
 
-Ainda na tela de configuração (ou na aba **Environment** do serviço):
+Na aba **Environment** do serviço no Render, adicione as variáveis:
 
-1. Adicione as seguintes variáveis:
-   | Chave | Valor | Descrição |
-   | :--- | :--- | :--- |
-   | `NODE_ENV` | `production` | Modo de execução otimizado para produção |
-   | `DATABASE_URL` | *`postgresql://...`* | URL de conexão copiada do PostgreSQL no Passo 1 |
+| Chave | Valor | Descrição |
+| :--- | :--- | :--- |
+| `NODE_ENV` | `production` | Modo de execução otimizado para produção |
+| `DATABASE_URL` | *`postgresql://postgres:[SENHA]@db.[REF].supabase.co:5432/postgres`* | Connection String do Supabase obtida no Passo 1 |
 
 > **Nota**: A variável `PORT` é injetada automaticamente pelo Render (geralmente `10000`). A aplicação já está preparada para escutar a porta definida por `process.env.PORT` nativamente.
 
@@ -224,7 +222,7 @@ Ainda na tela de configuração (ou na aba **Environment** do serviço):
 2. O Render executará o pipeline completo de inicialização:
    - 📦 Instalação dos pacotes (`npm install`)
    - ⚙️ Geração do Prisma Client (`npm run prisma:generate`)
-   - 🗄️ Aplicação das migrações no PostgreSQL (`npm run prisma:deploy`)
+   - 🗄️ Aplicação das migrações diretamente no Supabase (`npm run prisma:deploy`)
    - 🔨 Compilação do TypeScript para JavaScript (`npm run build`)
    - 🚀 Inicialização da API (`npm start`)
 3. Após a conclusão, teste o endpoint de Health Check no navegador ou via cURL:
@@ -238,6 +236,7 @@ Ainda na tela de configuração (ou na aba **Environment** do serviço):
      "timestamp": "2026-09-25T..."
    }
    ```
+4. Acesse o **Table Editor** no painel do Supabase para visualizar todas as tabelas (`profiles`, `projects`, `technologies`, `feedbacks`) criadas e sincronizadas.
 
 ---
 
