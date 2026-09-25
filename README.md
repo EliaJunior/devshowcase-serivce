@@ -10,6 +10,7 @@
 - **Framework Web**: [Express](https://expressjs.com/)
 - **ORM & Banco de Dados**: [Prisma ORM](https://www.prisma.io/) com [PostgreSQL](https://www.postgresql.org/) (Docker Compose localmente / [Supabase](https://supabase.com/) em produção)
 - **Validação de Dados & DTOs**: [Zod](https://zod.dev/)
+- **Documentação Interativa**: [Swagger / OpenAPI 3.0](https://swagger.io/) (`/api-docs`)
 - **Testes Automatizados**: [Vitest](https://vitest.dev/) e [Supertest](https://github.com/ladjs/supertest)
 
 ---
@@ -62,6 +63,8 @@ erDiagram
         string title "Título do projeto"
         string description "Descrição"
         string repositoryUrl "URL válida do repositório"
+        int upvotes "Total de curtidas (padrão 0)"
+        float averageRating "Nota média calculada (padrão 0)"
         string profileId FK "UUID do Perfil"
         datetime createdAt
         datetime updatedAt
@@ -392,24 +395,64 @@ Cadastra um novo projeto vinculando-o ao desenvolvedor (`profileId`) e opcionalm
 ```
 
 #### `GET /api/projects`
-Lista todos os projetos cadastrados trazendo os dados completos de desenvolvedor (`profile`), tecnologias (`technologies`) e avaliações (`feedbacks`).
+Busca e lista projetos com suporte a paginação e filtro opcional por tecnologia.
+- **Query Parameters**:
+  - `technology` *(opcional)*: Nome da tecnologia para filtrar (ex: `TypeScript`, `Node.js`).
+  - `page` *(opcional, padrão: `1`)*: Número da página.
+  - `limit` *(opcional, padrão: `10`, máx: `100`)*: Quantidade de itens por página.
 - **Status de Sucesso**: `200 OK`
+- **Exemplo de Resposta**:
+```json
+{
+  "data": [
+    {
+      "id": "e93ad3b1-8b01-49b5-a6a3-000000000001",
+      "title": "DevShowcase API",
+      "description": "API RESTful para vitrine de desenvolvedores.",
+      "repositoryUrl": "https://github.com/EliaJunior/devshowcase-serivce",
+      "upvotes": 15,
+      "averageRating": 4.8,
+      "profileId": "7f7bf4eb-ddad-48b4-9271-64d123456789",
+      "profile": {
+        "id": "7f7bf4eb-ddad-48b4-9271-64d123456789",
+        "name": "Ana Developer",
+        "email": "ana.dev@example.com"
+      },
+      "technologies": [
+        { "id": "c8a14b51-5c83-4a11-8ecb-1234567890ab", "name": "TypeScript" }
+      ],
+      "feedbacks": []
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
 
 #### `GET /api/projects/:id`
 Busca os detalhes de um projeto específico por ID.
 - **Status de Sucesso**: `200 OK`
 - **Status de Erro**: `404 Not Found`
 
+#### `PUT /api/projects/:id/upvote`
+Incrementa em **+1** o contador de curtidas/estrelas (`upvotes`) do projeto.
+- **Status de Sucesso**: `200 OK` (retorna o objeto do projeto atualizado com a nova quantidade de `upvotes`).
+- **Status de Erro**: `404 Not Found` se o projeto não for encontrado.
+
 ---
 
 ### 4. Feedbacks (`/api/projects/:id/feedbacks`)
 
 #### `POST /api/projects/:id/feedbacks`
-Cadastra uma avaliação/opinião técnica sobre um projeto.
+Cadastra uma avaliação/opinião técnica sobre um projeto, **calculando e atualizando automaticamente a nota média (`averageRating`) do projeto**.
 - **Status de Sucesso**: `201 Created`
 - **Validações**:
-  - `authorName`: obrigatório e não vazio.
-  - `comment`: obrigatório e não vazio.
+  - `authorName`: obrigatório e não vazio (máx. 100 caracteres).
+  - `comment`: obrigatório e não vazio (máx. 1000 caracteres).
   - `rating`: número inteiro obrigatório entre **1** e **5**.
 - **Payload**:
 ```json
@@ -424,6 +467,15 @@ Cadastra uma avaliação/opinião técnica sobre um projeto.
 Lista todas as avaliações recebidas pelo projeto especificado.
 - **Status de Sucesso**: `200 OK`
 - **Status de Erro**: `404 Not Found` se o projeto não existir.
+
+---
+
+### 5. Documentação Interativa (Swagger / OpenAPI 3.0)
+
+A documentação interativa completa de todos os endpoints, esquemas de entrada/saída e códigos de status HTTP pode ser visualizada no navegador:
+
+* **URL Local**: `http://localhost:3000/api-docs` (ou `/docs`)
+* **URL em Produção**: `https://devshowcase-serivce.onrender.com/api-docs`
 
 ---
 

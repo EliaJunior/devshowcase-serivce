@@ -16,12 +16,24 @@ describe('DevShowcase REST API Integration Tests', () => {
     await prisma.$disconnect();
   });
 
-  // Testes de Health Check
+  // Testes de Health Check e Documentação Swagger
   it('GET /health - deve retornar status ok', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.timestamp).toBeDefined();
+  });
+
+  it('GET /api-docs/ - deve carregar a interface interativa do Swagger UI', async () => {
+    const res = await request(app).get('/api-docs/');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Swagger UI');
+  });
+
+  it('GET /docs - deve redirecionar para /api-docs', async () => {
+    const res = await request(app).get('/docs');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/api-docs');
   });
 
   // Variáveis para guardar IDs criados e usar nos testes seguintes
@@ -151,6 +163,8 @@ describe('DevShowcase REST API Integration Tests', () => {
       expect(res.body.title).toBe(payload.title);
       expect(res.body.repositoryUrl).toBe(payload.repositoryUrl);
       expect(res.body.profileId).toBe(createdProfileId);
+      expect(res.body.upvotes).toBe(0);
+      expect(res.body.averageRating).toBe(0);
       expect(res.body.profile).toBeDefined();
       expect(res.body.profile.email).toBe('ana.dev@example.com');
       expect(res.body.technologies).toHaveLength(2);
@@ -182,18 +196,48 @@ describe('DevShowcase REST API Integration Tests', () => {
       expect(res.body.message).toContain('Perfil associado não encontrado');
     });
 
-    it('GET /api/projects - deve listar todos os projetos com relacionamentos (200)', async () => {
+    it('GET /api/projects - deve listar projetos com formato paginado (200)', async () => {
       const res = await request(app).get('/api/projects');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(10);
+      expect(res.body.pagination.total).toBeGreaterThanOrEqual(1);
 
-      const proj = res.body.find((p: { id: string }) => p.id === createdProjectId);
+      const proj = res.body.data.find((p: { id: string }) => p.id === createdProjectId);
       expect(proj).toBeDefined();
       expect(proj.profile).toBeDefined();
       expect(proj.technologies).toHaveLength(2);
       expect(Array.isArray(proj.feedbacks)).toBe(true);
+    });
+
+    it('GET /api/projects?technology=TypeScript - deve filtrar projetos por tecnologia (200)', async () => {
+      const res = await request(app).get('/api/projects?technology=TypeScript');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(
+        res.body.data.some((p: { id: string }) => p.id === createdProjectId)
+      ).toBe(true);
+    });
+
+    it('GET /api/projects?technology=TechInexistente - deve retornar lista vazia (200)', async () => {
+      const res = await request(app).get('/api/projects?technology=TechInexistente');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(0);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it('GET /api/projects?page=1&limit=1 - deve respeitar limites de paginação (200)', async () => {
+      const res = await request(app).get('/api/projects?page=1&limit=1');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(1);
     });
 
     it('GET /api/projects/:id - deve buscar projeto por ID com detalhes', async () => {
@@ -204,11 +248,28 @@ describe('DevShowcase REST API Integration Tests', () => {
       expect(res.body.title).toBe('DevShowcase API');
       expect(res.body.technologies).toHaveLength(2);
     });
+
+    it('PUT /api/projects/:id/upvote - deve incrementar as curtidas do projeto com sucesso (200)', async () => {
+      const res1 = await request(app).put(`/api/projects/${createdProjectId}/upvote`);
+      expect(res1.status).toBe(200);
+      expect(res1.body.id).toBe(createdProjectId);
+      expect(res1.body.upvotes).toBe(1);
+
+      const res2 = await request(app).put(`/api/projects/${createdProjectId}/upvote`);
+      expect(res2.status).toBe(200);
+      expect(res2.body.upvotes).toBe(2);
+    });
+
+    it('PUT /api/projects/:id/upvote - deve falhar com 404 para projeto inexistente', async () => {
+      const res = await request(app).put('/api/projects/a0000000-0000-4000-8000-000000000000/upvote');
+      expect(res.status).toBe(404);
+      expect(res.body.message).toContain('Projeto não encontrado');
+    });
   });
 
-  // 4. Testes de Feedback
+  // 4. Testes de Feedback com Cálculo de Média
   describe('Feedback Endpoints (/api/projects/:id/feedbacks)', () => {
-    it('POST /api/projects/:id/feedbacks - deve cadastrar feedback com sucesso (201)', async () => {
+    it('POST /api/projects/:id/feedbacks - deve cadastrar 1º feedback e atualizar a média do projeto para 5 (201)', async () => {
       const payload = {
         authorName: 'Tech Lead Carlos',
         comment: 'Excelente arquitetura e organização de camadas!',
@@ -225,6 +286,31 @@ describe('DevShowcase REST API Integration Tests', () => {
       expect(res.body.authorName).toBe(payload.authorName);
       expect(res.body.comment).toBe(payload.comment);
       expect(res.body.rating).toBe(5);
+
+      // Verificar se a média do projeto foi atualizada para 5.0
+      const projectRes = await request(app).get(`/api/projects/${createdProjectId}`);
+      expect(projectRes.status).toBe(200);
+      expect(projectRes.body.averageRating).toBe(5.0);
+    });
+
+    it('POST /api/projects/:id/feedbacks - deve cadastrar 2º feedback e atualizar a média para 4 (201)', async () => {
+      const payload = {
+        authorName: 'Mariana Reviewer',
+        comment: 'Muito bom, mas pode melhorar o tempo de resposta.',
+        rating: 3,
+      };
+
+      const res = await request(app)
+        .post(`/api/projects/${createdProjectId}/feedbacks`)
+        .send(payload);
+
+      expect(res.status).toBe(201);
+      expect(res.body.rating).toBe(3);
+
+      // Verificar se a média foi recalculada: (5 + 3) / 2 = 4.0
+      const projectRes = await request(app).get(`/api/projects/${createdProjectId}`);
+      expect(projectRes.status).toBe(200);
+      expect(projectRes.body.averageRating).toBe(4.0);
     });
 
     it('POST /api/projects/:id/feedbacks - deve falhar com 400 se rating for maior que 5', async () => {
@@ -245,8 +331,8 @@ describe('DevShowcase REST API Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBe(1);
-      expect(res.body[0].authorName).toBe('Tech Lead Carlos');
+      expect(res.body.length).toBe(2);
+      expect(res.body.some((f: { authorName: string }) => f.authorName === 'Tech Lead Carlos')).toBe(true);
     });
 
     it('GET /api/profiles/:id - agora deve incluir o projeto cadastrado', async () => {
