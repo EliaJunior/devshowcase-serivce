@@ -13,15 +13,6 @@ build/
 .env.local
 .env.*.local
 
-# Database
-*.sqlite
-*.sqlite3
-*.sqlite-journal
-*.db
-*.db-journal
-prisma/*.db
-prisma/*.db-journal
-
 # Testing and coverage
 coverage/
 

@@ -5,5 +5,7 @@ dotenv.config();
 export const env = {
   PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  DATABASE_URL: process.env.DATABASE_URL || 'file:./dev.db',
+  DATABASE_URL:
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/devshowcase?schema=public',
 };

@@ -18,7 +18,7 @@ ${green}${bold}====================================================${reset}
   ${cyan}🩺 Health Check${reset} : ${yellow}${url}/health${reset}
   ${cyan}📚 Documentação${reset} : ${yellow}README.md / DevShowcase.postman_collection.json${reset}
   ${cyan}📦 Ambiente${reset}     : ${bold}${env.NODE_ENV}${reset}
-  ${cyan}🗄️  Banco${reset}        : SQLite (Prisma ORM)
+  ${cyan}🗄️  Banco${reset}        : PostgreSQL (Prisma ORM)
 ${green}${bold}====================================================${reset}
 ${bold}Pronto para receber requisições! 🎯${reset}
 `);

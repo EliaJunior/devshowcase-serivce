@@ -8,7 +8,7 @@
 
 - **Runtime & Linguagem**: [Node.js](https://nodejs.org/) (v24) com [TypeScript](https://www.typescriptlang.org/)
 - **Framework Web**: [Express](https://expressjs.com/)
-- **ORM & Banco de Dados**: [Prisma ORM](https://www.prisma.io/) com [SQLite](https://www.sqlite.org/) (configuração local sem dependência de containers)
+- **ORM & Banco de Dados**: [Prisma ORM](https://www.prisma.io/) com [PostgreSQL](https://www.postgresql.org/) (orquestrado via Docker Compose)
 - **Validação de Dados & DTOs**: [Zod](https://zod.dev/)
 - **Testes Automatizados**: [Vitest](https://vitest.dev/) e [Supertest](https://github.com/ladjs/supertest)
 
@@ -87,6 +87,9 @@ erDiagram
 
 ## ⚙️ Pré-requisitos e Execução Local
 
+- **Node.js** (v18+)
+- **Docker** e **Docker Compose**
+
 ### 1. Clonar o repositório
 ```bash
 git clone git@github.com:EliaJunior/devshowcase-serivce.git
@@ -107,31 +110,52 @@ Conteúdo padrão do `.env`:
 ```env
 PORT=3000
 NODE_ENV=development
-DATABASE_URL="file:./dev.db"
+
+# PostgreSQL Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=devshowcase
+POSTGRES_PORT=5432
+
+# Prisma Database URL
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/devshowcase?schema=public"
 ```
 
-### 4. Executar migrações do banco de dados
+### 4. Subir o banco de dados PostgreSQL com Docker Compose
+```bash
+# Iniciar o container em background
+npm run docker:up
+# ou diretamente: docker compose up -d
+```
+
+### 5. Executar migrações do banco de dados
 ```bash
 npx prisma migrate dev
 ```
 
-### 5. Popular o banco com dados de exemplo (Seed opcional)
+### 6. Popular o banco com dados de exemplo (Seed opcional)
 ```bash
 npm run seed
 ```
 
-### 6. Iniciar o servidor em desenvolvimento
+### 7. Iniciar o servidor em desenvolvimento
 ```bash
 npm run dev
 ```
 O servidor estará rodando em: `http://localhost:3000`
 
-### 7. Executar a suite de testes automatizados
+### 8. Executar a suite de testes automatizados
 ```bash
 npm test
 ```
 
-### 8. Gerar build de produção
+### 9. Parar o container do banco de dados (quando finalizar)
+```bash
+npm run docker:down
+# ou diretamente: docker compose down
+```
+
+### 10. Gerar build de produção
 ```bash
 npm run build
 npm start
