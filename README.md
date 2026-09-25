@@ -171,14 +171,17 @@ Nesta arquitetura de produção, a API Node.js é hospedada no **[Render](https:
 
 ### Passo 1: Obter a Connection String do PostgreSQL no Supabase
 
-1. Acesse o [Dashboard do Supabase](https://supabase.com/dashboard) e selecione ou crie um projeto.
-2. No menu lateral, acesse **Project Settings** > **Database** (ou clique no botão **Connect** no topo da tela).
-3. Role até a seção **Connection string** e selecione a aba **URI**.
-4. Copie a URL de conexão no formato:
-   ```
-   postgresql://postgres:[SUA-SENHA]@db.[SEU-PROJECT-REF].supabase.co:5432/postgres
-   ```
-   *(Substitua `[SUA-SENHA]` pela senha definida na criação do banco no Supabase)*.
+1. Acesse o [Dashboard do Supabase](https://supabase.com/dashboard) e selecione o seu projeto.
+2. Acesse **Project Settings** > **Database** (ou clique no botão **Connect** no topo).
+3. Na seção **Connection string**, selecione a aba **URI** e escolha o modo **Connection Pooler** (recomendado para plataformas como o Render que utilizam IPv4):
+   - Modo: **Session** (porta `5432`)
+   - O formato será:
+     ```
+     postgresql://postgres.[SEU-PROJECT-REF]:[SUA-SENHA]@aws-0-[REGIAO].pooler.supabase.com:5432/postgres
+     ```
+4. **Importante sobre caracteres especiais na senha**:
+   - Se a sua senha contiver caracteres especiais como `@`, eles **devem ser codificados em formato URL (URL encoded)**.
+   - Por exemplo, o caractere `@` deve ser substituído por `%40` (ex: `danD@1785__` vira `danD%401785__`).
 
 ---
 
@@ -193,7 +196,7 @@ Nesta arquitetura de produção, a API Node.js é hospedada no **[Render](https:
    - **Runtime**: `Node`
    - **Build Command**:
      ```bash
-     npm install && npm run prisma:generate && npm run prisma:deploy && npm run build
+     npm install --include=dev && npm run prisma:generate && npm run prisma:deploy && npm run build
      ```
    - **Start Command**:
      ```bash
@@ -210,8 +213,10 @@ Na aba **Environment** do serviço no Render, adicione as variáveis:
 | Chave | Valor | Descrição |
 | :--- | :--- | :--- |
 | `NODE_ENV` | `production` | Modo de execução otimizado para produção |
-| `DATABASE_URL` | *`postgresql://postgres:[SENHA]@db.[REF].supabase.co:5432/postgres`* | Connection String do Supabase obtida no Passo 1 |
+| `DATABASE_URL` | *`postgresql://postgres.[REF]:[SENHA-ENCODED]@aws-0-[REGIAO].pooler.supabase.com:5432/postgres`* | Connection String do Supabase (Connection Pooler) |
 
+> **Dica**: Se a senha tiver `@`, lembre-se de usar `%40` no lugar do `@` na senha da `DATABASE_URL`.
+> 
 > **Nota**: A variável `PORT` é injetada automaticamente pelo Render (geralmente `10000`). A aplicação já está preparada para escutar a porta definida por `process.env.PORT` nativamente.
 
 ---
