@@ -163,6 +163,95 @@ npm start
 
 ---
 
+## 🚀 Como Fazer Deploy no Render
+
+O [Render](https://render.com/) é uma plataforma em nuvem que oferece hospedagem gratuita para aplicações Node.js e instâncias gerenciadas do PostgreSQL.
+
+Siga o passo a passo abaixo para publicar o **DevShowcase Service**:
+
+### Passo 1: Criar o Banco de Dados PostgreSQL no Render
+
+1. Acesse o [Dashboard do Render](https://dashboard.render.com/) e clique em **New +** > **PostgreSQL**.
+2. Preencha as configurações:
+   - **Name**: `devshowcase-postgres`
+   - **Database**: `devshowcase`
+   - **User**: `postgres` (ou o usuário gerado automaticamente)
+   - **Region**: Selecione a região desejada (ex: *Frankfurt*, *Ohio* ou *Oregon*)
+   - **Plan**: **Free**
+3. Clique em **Create Database**.
+4. Quando o banco estiver criado e ativo, copie o valor do campo **Internal Database URL** (recomendado se o Web Service estiver na mesma região) ou **External Database URL**.
+
+---
+
+### Passo 2: Criar o Web Service da API
+
+1. No Dashboard do Render, clique em **New +** > **Web Service**.
+2. Conecte sua conta do GitHub e selecione o repositório **`devshowcase-service`**.
+3. Configure os detalhes do serviço:
+   - **Name**: `devshowcase-service`
+   - **Region**: A mesma região onde criou o PostgreSQL no Passo 1
+   - **Branch**: `main`
+   - **Runtime**: `Node`
+   - **Build Command**:
+     ```bash
+     npm install && npm run prisma:generate && npm run prisma:deploy && npm run build
+     ```
+   - **Start Command**:
+     ```bash
+     npm start
+     ```
+   - **Plan**: **Free**
+
+---
+
+### Passo 3: Configurar Variáveis de Ambiente (Environment Variables)
+
+Ainda na tela de configuração (ou na aba **Environment** do serviço):
+
+1. Adicione as seguintes variáveis:
+   | Chave | Valor | Descrição |
+   | :--- | :--- | :--- |
+   | `NODE_ENV` | `production` | Modo de execução otimizado para produção |
+   | `DATABASE_URL` | *`postgresql://...`* | URL de conexão copiada do PostgreSQL no Passo 1 |
+
+> **Nota**: A variável `PORT` é injetada automaticamente pelo Render (geralmente `10000`). A aplicação já está preparada para escutar a porta definida por `process.env.PORT` nativamente.
+
+---
+
+### Passo 4: Concluir o Deploy e Validar
+
+1. Clique em **Create Web Service**.
+2. O Render executará o pipeline completo de inicialização:
+   - 📦 Instalação dos pacotes (`npm install`)
+   - ⚙️ Geração do Prisma Client (`npm run prisma:generate`)
+   - 🗄️ Aplicação das migrações no PostgreSQL (`npm run prisma:deploy`)
+   - 🔨 Compilação do TypeScript para JavaScript (`npm run build`)
+   - 🚀 Inicialização da API (`npm start`)
+3. Após a conclusão, teste o endpoint de Health Check no navegador ou via cURL:
+   ```bash
+   curl -X GET https://seu-app.onrender.com/health
+   ```
+   **Resposta esperada (`200 OK`)**:
+   ```json
+   {
+     "status": "ok",
+     "timestamp": "2026-09-25T..."
+   }
+   ```
+
+---
+
+### Passo 5 (Opcional): Popular Dados Iniciais (Seed)
+
+Para carregar dados demonstrativos de perfis, tecnologias e projetos no ambiente de produção:
+1. No Dashboard do Web Service no Render, acesse a aba **Shell**.
+2. Execute o comando:
+   ```bash
+   npm run seed
+   ```
+
+---
+
 ## 📬 Guia de Teste com o Postman
 
 Para facilitar a validação de todos os fluxos da API, incluímos na raiz do projeto o arquivo **`DevShowcase.postman_collection.json`**.
