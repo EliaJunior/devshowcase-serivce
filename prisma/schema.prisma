@@ -24,6 +24,8 @@ model Project {
   title         String
   description   String?
   repositoryUrl String
+  upvotes       Int          @default(0)
+  averageRating Float        @default(0)
   profileId     String
   profile       Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   technologies  Technology[]

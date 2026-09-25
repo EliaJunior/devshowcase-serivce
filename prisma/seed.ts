@@ -52,6 +52,8 @@ async function main() {
       title: 'DevShowcase Service',
       description: 'API REST para vitrine de desenvolvedores, seus projetos, tecnologias e feedbacks.',
       repositoryUrl: 'https://github.com/EliaJunior/devshowcase-serivce',
+      upvotes: 15,
+      averageRating: 5.0,
       profileId: profileElias.id,
       technologies: {
         connect: [
@@ -68,6 +70,8 @@ async function main() {
       title: 'DevShowcase Web UI',
       description: 'Interface web moderna para explorar perfis e avaliar projetos técnicos.',
       repositoryUrl: 'https://github.com/EliaJunior/devshowcase-web',
+      upvotes: 8,
+      averageRating: 4.0,
       profileId: profileMariana.id,
       technologies: {
         connect: [
